@@ -72,7 +72,7 @@
 % -------------------------------------------------
 \section{Objetivo}
 \begin{itemize}
-    \item Realizar un análisis de imágenes tomadas en distintos momentos de una playa en Puerto Morelos, QR para detectar la presencia de sargazo en el océano y ayudar en la estimación del arribo de este elemento que afecta al turismo y demás actividades económicas.
+    \item Realizar un análisis de imágenes tomadas en distintos momentos de una playa en Puerto Morelos, Quintana Roo para detectar la presencia de sargazo en el océano y ayudar en la estimación del arribo de este elemento que afecta al turismo y demás actividades económicas.
     \item A partir del análisis, realizar alguna de las siguientes actividades concretas:
     \begin{itemize}
         \item Detección del sargazo
@@ -89,259 +89,324 @@
 
 La llegada atípica de sargazo a las playas mexicanas y el Caribe ha provocado afectaciones económicas significativas en las entidades cuya economía está mayoritariamente basada en los ingresos por actividades turísticas. 
 
-\subsection{SVD}
-Uno de los componentes principales del algoritmo PCA es la descomposición en valores singulares o \textit{singular value decomposition} (SVD, por sus siglas en inglés). La idea principal de SVD es descomponer una matriz (en este caso una imagen) en matrices más pequeñas de rango uno. Esto se hace a través de la siguiente ecuación: 
-
-\begin{equation} \label{eq:svd}
-    A = U\Sigma V^T
-\end{equation}
-
-en donde los vectores en $U$ y $V$ se conocen como vectores singulares izquierdos y vectores singulares derechos, respectivamente. Las dimensiones de cada matriz son: 
-
-\begin{equation}\label{eq:svd_dimensions}
-    A_{n\times p} = U_{n\times n} \Sigma_{n\times p} V_{p\times p}^T
-\end{equation}
-
-SVD aplicado a imágenes tiene importancia en la compresión de la información. Es decir, poder mandar la misma calidad de la imagen con mucha menos información. Esto se hace mediante las submatrices de rango 1 que SVD encuentra. Por ejemplo, si tomamos en consideración la siguiente matriz de rango 1 $A$:
-
-\begin{equation*}
-    A = \begin{bmatrix}
-        a & a & c & c & e & e \\
-        a & a & c & c & e & e \\
-        a & a & c & c & e & e \\
-        a & a & c & c & e & e
-    \end{bmatrix}
-\end{equation*}
-
-En lugar de mandar $A$, la forma más eficiente de transmitir $A$ es mandando lo siguiente: 
-
-\begin{equation*}
-    A = 
-\begin{bmatrix}
-    1 \\ 1 \\ 1 \\ 1
-\end{bmatrix}
-\begin{bmatrix}
-    a & a & c & c & e & e \\
-\end{bmatrix}
-\end{equation*}
-
-La cual se puede expresar como $A = u_1v_1^T$. Cuando aumentamos a una matriz de rango $2$, la ecuación anterior se convierte en: $A = u_1v_1^T + u_2v_2^T$. Ahora, sabiendo cómo podríamos obtener una posible descomposición de $A$, la pregunta es: ¿hemos escogido la mejor opción de vectores $u$ y $v$? Una pista para poder contestar esta pregunta es que los vectores en $U$ deben ser ortogonales con los vectores en $V$, pues esto producirá términos $c_2u_2v_2^T$ con menor valor. En tanto, SVD escoge términos de rango uno según el orden de importancia. Estos órdenes de importancia corresponden con las componentes principales de la imagen en cuestión.
-
-Lo anterior, nos permite llegar a una técnica de aprendizaje de máquina de tipo estadístico no supervisado que utiliza una transformación ortogonal para llevar un conjunto de variables de un espacio lineal, las cuales seguramente tienen cierta correlación, a uno en el que se logre separarlas. Es decir, se busca que ya no estén correlacionadas en el nuevo espacio. Más precisamente, el método se puede resumir como uno en el que se maximiza la varianza de las variables del conjunto de datos sobre sus componentes principales.
-
-Aunque generalmente esta técnica es utilizada para reducir las variables que describen un conjunto de datos, también se puede utilizar para la obtención de imágenes conocidas como \textit{eigenfaces}, la cual busca generar una o varias imágenes que representen cualquiera de las imágenes del conjunto bajo análisis original.
-
 
 % -------------------------------------------------
 % -------------------------------------------------
 % -------------------------------------------------
 \section{Desarrollo}
+Para resolver los objetivos planteados en este proyecto diseñamos una arquitectura que consta de las siguientes fases:
 
-Para esta práctica ocupamos las imágenes recopiladas en el proyecto \textit{MIT Faces Recognition Database}, gracias al trabajo de \cite{szummer}. Esta base de datos cuenta con $3,993$ imágenes de rostros de distintas identidades en escala de grises. Un ejemplo se muestra en la figura \ref{fig:face_1000}.
+\begin{enumerate}
+    \item Muestreo de imágenes
+    \item División de imágenes en imágenes de entrenamiento y prueba
+    \item Clasificación de imágenes
+    \item Extracción de características relevantes
+    \item Entrenamiento y evaluación de modelos 
+\end{enumerate}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[scale=0.3]{imgs/face_1000.png}
-    \caption{Ejemplo de imagen del proyecto \textit{MIT Face Recognition Project}}
-    \label{fig:face_1000}
-\end{figure}
+\subsection{Muestreo de imágenes}
+Del \textit{pool} original de imágenes, decidimos seleccionar las imágenes más representativas para identificar el sargazo. Nuestro base de imágenes constó de 11 imágenes: 
 
-\subsection{Preprocesamiento de imágenes}
-El primer punto es encontrar las dimensiones de cada imagen, las cuales tienen un tamaño de $128\times 128$ pixeles. Posteriormente, hacemos que todas las imágenes se acoplen a estas dimensiones como se muestra a continuación: 
+\begin{itemize}
+    \item \verb|1622134320.Thu.May.27_16_52_00.GMT.2021|
+    \item \verb|1622134380.Thu.May.27_16_53_00.GMT.2021|
+    \item \verb|1622134620.Thu.May.27_16_57_00.GMT.2021|
+    \item \verb|1622138440.Thu.May.27_18_00_40.GMT.2021|
+    \item \verb|1622144920.Thu.May.27_19_48_40.GMT.2021|
+    \item \verb|1622157720.Thu.May.27_23_22_00.GMT.2021|
+    \item \verb|1622732400.Thu.Jun.03_15_00_00.GMT.2021|
+    \item \verb|1622732880.Thu.Jun.03_15_08_00.GMT.2021|
+    \item \verb|1623441780.Fri.Jun.11_20_03_00.GMT.2021|
+    \item \verb|1623442440.Fri.Jun.11_20_14_00.GMT.2021|
+    \item \verb|1623442740.Fri.Jun.11_20_19_00.GMT.2021|
+\end{itemize}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[scale=0.2]{imgs/centered_images.png}
-    \caption{Imagen acoplada a una matriz de $128\times 128$}
-    \label{fig:faces_centered}
-\end{figure}
-
-Una vez que tenemos todas nuestras imágenes con el mismo tamaño, lo que hacemos es encontrar la imagen promedio:
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[scale=0.25]{imgs/avg_img.png}
-    \caption{Imagen promedio tomada como la media aritmética de cada pixel entre todos los pixeles de todas las imágenes del dataset}
-    \label{fig:avg_face}
-\end{figure}
-
-La figura \ref{fig:avg_face} se obtiene de realizar el promedio de todas las imágenes del dataset para un pixel en específico. Una vez que tenemos esta figura, lo que hacemos es centrar todas las imágenes mediante la resta de los valores actuales menos los valores de la imagen promedio: 
+A continuación se muestran dos de estas imágenes:
 
 \begin{figure}[H]
     \centering
-    \includegraphics[scale=0.2]{imgs/centered_images_avg.png}
-    \caption{Imágenes de caras centradas: resta entre los valores originales y la cara promedio}
-    \label{fig:imgs_minus_avg}
+    \includegraphics[scale=0.13]{imgs/selected_img_2.png}
+    \caption{1622138440.Thu.May.27\_18\_00\_40.GMT.2021}
 \end{figure}
 
-\subsection{PCA}
-Para el análisis de componentes principales, empleamos la descomposición por valores singulares para obtener las componentes en orden de importancia. Dichas componentes se almacenan en la matriz $\sigma$ de la ecuación \ref{eq:svd}. 
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.13]{imgs/selected_img_1.png}
+    \caption{1622134380.Thu.May.27\_16\_53\_00.GMT.2021}
+\end{figure}
 
-Al aplicar SVD sobre todo el dataset obtenemos las dimensiones de las matrices de la ecuación \ref{eq:svd}. Los resultados se muestran en la tabla \ref{tab:svd_dimensions}. 
+
+\subsection{División de imágenes en imágenes de entrenamiento y prueba}
+Para esta sección, lo que hicimos fue lo siguiente:
+\begin{enumerate}
+    \item Rescalamiento de las imágenes originales de $1280\times 960$ a imágenes de $900\times900$
+    \item División en ventanas de $100\times 100$
+    \item División en imágenes de entrenamiento y prueba
+\end{enumerate}
+
+En la figura \ref{fig:reduced_images} se muestran varias imágenes de $100\times 100$ para las clases sargazo, cielo, agua, costa y sargazo muerto respectivamente. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.8]{imgs/sargassum_reduced.png}
+    \includegraphics[scale=0.8]{imgs/sky_reduced.png}
+    \includegraphics[scale=0.8]{imgs/water_reduced.png}
+    \includegraphics[scale=0.8]{imgs/coast_reduced.png}
+    \includegraphics[scale=0.8]{imgs/dsargassum_reduced.png}                
+    \caption{Imágenes de $100 \times 100$ pixeles para las clases sargazo, cielo, agua, costa y sargazo muerto respectivamente}
+    \label{fig:reduced_images}
+\end{figure}
+
+\subsection{Clasificación de imágenes}
+
+Una vez que contamos con el conjunto de entrenamiento y prueba, realizamos una clasificación supervisada de las imágenes de $100\times 100$ pixeles en 5 clases: 
+\begin{enumerate}
+    \item Sargazo
+    \item Sargazo muerto
+    \item Agua
+    \item Cielo
+    \item Costa
+\end{enumerate}
+
+Después de realizar esta clasificación, nos quedó la siguiente división:
 
 \begin{table}[H]
     \centering
-    \begin{tabular}{|c|c|}
-         \hline
-         Matriz & Dimensiones \\ \hline
-         $U$ & $3993 \times 3993$ \\ \hline
-         $\Sigma$ & $3993$ \\ \hline
-         $V$ & $3993 \times 16384$ \\ \hline
+    \begin{tabular}{|c|c|c|}
+    	\hline
+		 & Entrenamiento & Prueba \\ \hline
+         Sargazo & 134 & 53 \\ \hline
+         Sargazo muerto & 128 & 45 \\ \hline
+         Agua & 151 & 57 \\ \hline
+		 Cielo & 78 & 29 \\ \hline
+         Costa & 309 & 116 \\ \hline
+         \textbf{Total} & \textbf{800} & \textbf{300} \\ \hline                          
     \end{tabular}
-    \caption{Dimensiones de las matrices $U$, $\Sigma$ y $V$}
+    \caption{Cantidad de imágenes de entrenamiento y prueba divididas en las $5$ clases}
     \label{tab:svd_dimensions}
 \end{table}
 
-Podemos observar que se mantienen las dimensiones de cada matriz de la ecuación \ref{eq:svd_dimesions}. Ahora, para visualizar la variablidad explicada por SVD, podemos recurrir a la figura \ref{fig:svd_graph} en la cual podemos observar que a partir de los primeros $5$ valores singulares, ya no hay variación en los datos. Esto, relacionado con la teoría de SVD, nos indica que podríamos comprimir la información simplemente con $5$ componentes principales y obtener una muy buena aproximación de la información en las caras. 
+
+
+\subsection{Extracción de características relevantes}
+
+Para la extracción de características, lo que hicimos fue hacer un análisis de texturas con la matriz de co-ocurrencia y las características de Haralick. Las características que seleccionamos para nuestro vector de pruebas fueron las siguientes:
+
+\begin{itemize}
+    \item Contraste
+    \item Disimilaridad
+    \item Homogeneidad
+    \item Energía
+    \item Correlación
+    \item ASM
+\end{itemize}
+
+
+\subsection{Entrenamiento y evaluación de modelos }
+
+Para el entrenamiento y evaluación de modelos, probamos con los siguientes clasificadores:
+
+\begin{itemize}
+	\item $k$-vecinos
+    \item Máquina de Soporte Vectorial con kernel \textit{rbf}
+    \item Clasificador Gausiano de Proceso
+    \item Árboles de decisión
+    \item \textit{Random Forest}
+    \item Perceptrón multi capa
+    \item Clasificador \textit{Ada Boost}
+    \item Clasificador Bayesiano
+    \item Análisis por discriminante cuadrático
+\end{itemize}
+
+A continuación se muestran los resultados (precisión) de cada clasificador: 
 
 \begin{figure}[H]
     \centering
-    \includegraphics[scale=0.35]{imgs/svd_variance.png}
-    \caption{Nivel de variabilidad explicada por cada uno de los $3993$ valores singulares}
-    \label{fig:svd_graph}
+    \includegraphics[scale=0.4]{imgs/classifiers_report.png}
+    \caption{Reporte de precisión para cada clasificador}
+    \label{fig:clfs}
 \end{figure}
 
-En la figura \ref{fig:svd_pc} podemos observar los rasgos explicados por las $5$ componentes principales. A destacar que cada una de las componentes principales explica un rasgo único en las caras. 
+Podemos observar que el que mejor desempeño tuvo fue el clasificador de árboles aleatorios. Este criterio (precisión) lo tomamos como un valor discriminante para analizar la precisión para la clase \textbf{sargassum} pues el valor mostrado en la figura \ref{fig:clfs} es el promedio general para las $5$ clases. Siguiendo esta lógica, obtuvimos los siguientes resultados:
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[scale=0.25]{imgs/first_5_pc.png}
-    \caption{Rasgos de las caras explicados por las primeras $5$ componentes principales}
-    \label{fig:svd_pc}
-\end{figure}
+\begin{itemize}
+    \item \textit{Random Forest}:
+		\begin{figure}[H]
+		    \centering
+		    \includegraphics[scale=0.4]{imgs/rf_clasif_report.png}
+		    \caption{Reporte de clasificación para \textit{Random Forest}}
+		    \label{fig:rf_cr}
+		\end{figure}
+		
+		\begin{figure}[H]
+		    \centering
+		    \includegraphics[scale=0.4]{imgs/rf_confusion_mat.png}
+		    \caption{Matriz de confusión para \textit{Random Forest}}
+		    \label{fig:rf_cm}
+		\end{figure}
+    \item \textit{Decision Tree}:
+		\begin{figure}[H]
+		    \centering
+		    \includegraphics[scale=0.4]{imgs/dt_clasif_report.png}
+		    \caption{Reporte de clasificación para \textit{Decision Tree}}
+		    \label{fig:dt_cr}
+		\end{figure}    
 
-Continuando con el tutorial y los ejercicios propuestos en \cite{sandipan}, después se trabajó con la obtención de los \textit{eigenfaces}. Para ello, primero se normalizó y se calcularon los componentes principales de PCA. Esto derivó en que---considerando que se tenían imágenes de tamaño $64 \times 64$ por lo que el tamaño de la matriz era de $4,096$---se redujera el tamaño del vector de componentes principales. Es decir, se proyectaron los valores de los pixeles sobre los $64$ vectores resultantes.
+		\begin{figure}[H]
+		    \centering
+		    \includegraphics[scale=0.4]{imgs/dt_confusion_mat.png}
+		    \caption{Matriz de confusión para \textit{Decision Tree}}
+		    \label{fig:dt_cm}
+		\end{figure}
+		
+\end{itemize}
 
-Si observamos la varianza que se va acumulando componente a componente, obtenemos lo siguiente:
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[scale=0.25]{imgs/cum_componentes.png}
-    \caption{Acumulado de la varianza por componente calculado.}
-    \label{fig:svd_pc}
-\end{figure}
+Podemos observar que \textit{Random Forest} a pesar de obtener una precisión de $0.72$, la precisión para el sargazo es de apenas $0.56$. Mientras que para \textit{Decision Tree}, a pesar de obtener una precisión de $0.64$, la precisión de clasificación del sargazo es de apenas $0.3$.
 
-En la figura anterior, se muestra claramente que el $90\%$ de las varianzas de las imágenes bajo análisis se encuentran contenidas dentro de las primeras $64$ componentes.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[scale=0.25]{imgs/dist_var.png}
-    \caption{Distribución de la varianza dependiente del número de componentes principales considerado. Más del $90\%$ de los elementos se encuentran dentro de los $64$ componentes.}
-    \label{fig:svd_pc}
-\end{figure}
-
-Ya contando con el procesamiento inicial, se obtuvieron las imágenes promedio y de desviación estándar.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[scale=0.25]{imgs/mean_sd_faces.png}
-    \caption{Caras generadas con el promedio y desviación estándar del total de rostros.}
-    \label{fig:svd_pc}
-\end{figure}
-
-Por lo cual, ya es posible observar las \textit{eigenfaces}, las cuales contienen o describen los elementos más importantes del conjunto original de rostros.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[scale=0.25]{imgs/eigenfaces.png}
-    \caption{Se muestran las primeras \textit{eigenfaces}.}
-    \label{fig:svd_pc}
-\end{figure}
-
-Finalmnete, según lo que se ha incluido en la introducción, en teoría ya es posible reconstruir o generar, a partir de las \textit{eigenfaces}, cualquiera de las imágenes originales en el dataset. Para ello, solo basta con generar una combinación lineal de las $64$ imágenes de referencia basadas en el mismo número de componentes principales. \footnote{Esta función se trabajó a partir del método \textit{inverse\_transform} de scikit\-learn.}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[scale=0.25]{imgs/reconstructed.png}
-    \caption{Se muestran imágenes aleatorias regeneradas a partir de los vectores de componentes principales o \textit{eigenfaces}.}
-    \label{fig:svd_pc}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[scale=0.25]{imgs/reconstructed_individual.png}
-    \caption{Estudio centrado en la reconstrucción de un rostro en específico a partir de la comparación de la imagen original y la obtenida después de realizar el procesamiento.}
-    \label{fig:svd_pc}
-\end{figure}
 
 % -------------------------------------------------
 % -------------------------------------------------
 % -------------------------------------------------
 \section{Resultados}
 
-A partir del trabajo realizado, podemos considerar que se ha entendido plenamente el funcionamiento del método de análisis de componentes principales (PCA)---igual que el procesamiento inicial mediante SVD---para generar imágenes que, al ser transformadas linealmente por ciertos parámetros determinados, se pueden combinar para obtener cualquier imagen de una base de datos de fotografías de rostro o cualquier gráfico que se requiera inicial.
-
-La técnica utilizada puede ayudar en la optimización y reducción del espacio para análisis de imágenes, almacenamiento y transmisión de datos gráficos. También, siendo la aplicación más importante de la técnica, este método es fundamental para el reconocimiento de patrones en los rostros y así poder identificar la identidad que se observa en una imagen.
 
 % -------------------------------------------------
 % -------------------------------------------------
 % -------------------------------------------------
 \section{Conclusiones}
 
+Al revisar los resultados 
+
 
 % -------------------------------------------------
 % -------------------------------------------------
 % -------------------------------------------------
 \section{Secciones de código relevante}
-
-\subsection{Obtención de la cara promedio}
+\subsection{Extracción de características}
 \begin{lstlisting}[language=python]
-def get_avg_image(images): 
-    return np.mean(images, axis=0)\end{lstlisting}
-    
-\subsection{Centrado de imágenes}
-\begin{lstlisting}[language=python]
-def center_image(image, avg_image):
-    return image-avg_image\end{lstlisting}
-    
-\subsection{SVD}
-\begin{lstlisting}[language=Python]
-U, Sigma, VT = np.linalg.svd(X, full_matrices=False) \end{lstlisting}
+def extract_haralick_features(grayscale_image, args):
+    distances = args['distances']
+    angles = args['angles']
+    glcm = greycomatrix(grayscale_image, distances, angles)
+    features = [
+        np.mean(greycoprops(glcm, 'contrast')),
+        np.mean(greycoprops(glcm, 'dissimilarity')),
+        np.mean(greycoprops(glcm, 'homogeneity')),
+        np.mean(greycoprops(glcm, 'energy')),
+        np.mean(greycoprops(glcm, 'correlation')),
+        np.mean(greycoprops(glcm, 'ASM')),
+    ]
+    return features
 
-\subsection{Variación de componentes principales}
-\begin{lstlisting}[language=python]
-x = np.arange(1, Sigma.shape[0])
+def label_encode(y):
+    le = LabelEncoder()
+    le.fit(y)
+    return (le.transform(y), le.classes_)
 
-fig = go.Figure()
-fig.add_trace(go.Scatter(
-    x=x,
-    y=Sigma[0]/np.sqrt(x),
-    name='sigma_0/sqrt(x)'
-))
-fig.add_trace(go.Scatter(
-    x=np.arange(Sigma.shape[0]),
-    y=Sigma,
-    mode='markers', name='Singular Values'
-))
-fig.update_layout(
-    template='plotly_white',
-    title=dict(
-        text='Singular values'
-    ), width=600
+def get_dir_contents(path):
+    cts = os.listdir(path)
+    return [c for c in cts if c[0] != '.']
+
+def get_X_y_vectors(path, feature_extraction_function, args):
+    X = []
+    y = []
+    for label in get_dir_contents(path):
+        for file_name in get_dir_contents(path + label + "/"):
+            image = cv2.imread(path + label + "/" + file_name, cv2.IMREAD_GRAYSCALE)
+            features = feature_extraction_function(image, args)
+            X.append(features)
+            y.append(label)
+    y, classes_ = label_encode(y)
+    return (np.array(X), y, classes_)
+
+#--------------------------------------
+#         Feature extraction
+#--------------------------------------
+TRAIN_IMAGES_PATH = 'dataset/train/'
+TEST_IMAGES_PATH = 'dataset/test/'
+
+haralick_args = {
+    'distances': [1], 
+    'angles': [0, np.pi/4, np.pi/2, 3*np.pi/4]
+}
+
+X_train, y_train, train_classes_ = get_X_y_vectors(
+    TRAIN_IMAGES_PATH, extract_haralick_features, haralick_args
 )
-fig.show() \end{lstlisting}
+X_test, y_test, test_classes_ = get_X_y_vectors(
+    TEST_IMAGES_PATH, extract_haralick_features, haralick_args
+)
 
 
-\subsection{Obtención de las $n$ componentes principales}
+print(f"X_train: {X_train.shape}\ty_train: {y_train.shape}")
+print(f"X_test: {X_test.shape}\ty_test: {y_test.shape}")
+print(f"Train classes: {train_classes_}\nTest classes: {test_classes_}")\end{lstlisting}
+
+
+\subsection{Entrenamiento de clasificadores}
+
 \begin{lstlisting}[language=python]
-def get_n_principal_components(n, VT):
-    images = []
-    d = int(np.sqrt(VT[0].shape[0]))
-    for i in range(n):
-        images.append(VT[i].reshape(d,d))
-    return images \end{lstlisting}
+#--------------------------------------
+#     Model training and evaluation
+#--------------------------------------
+classifiers = [
+    KNeighborsClassifier(n_neighbors=5, weights='distance'),
+    SVC(),
+    GaussianProcessClassifier(),
+    DecisionTreeClassifier(max_depth=5),
+    RandomForestClassifier(),
+    MLPClassifier(alpha=1, max_iter=1000),
+    AdaBoostClassifier(random_state=0),
+    GaussianNB(),
+    QuadraticDiscriminantAnalysis()
+]
+names = ["Nearest Neighbors", "SVM", "Gaussian Process",
+         "Decision Tree", "Random Forest", "Neural Network", "AdaBoost",
+         "Naive Bayes", "QDA"]
+
+scores = []
+
+for name, classifier in zip(names, classifiers):
+    classifier.fit(X_train, y_train)
+    score = classifier.score(X_test, y_test)
+    y_pred = classifier.predict(X_test)
+    scores.append(score)
+
+df = pd.DataFrame({'classifier': names,'score': scores})
+df = df.sort_values(by='score', ascending=False)\end{lstlisting}
+
+\subsection{Evaluación de modelos}
+\begin{lstlisting}[language=python]
+#--------------------------------------
+#         Confusion matrix
+#--------------------------------------
+def evaluate(model, X_test, y_true, y_pred, target_names, model_name):
+    print(f"{model_name}")
+    print(classification_report(y_true, y_pred, target_names=target_names))
+    plot_confusion_matrix(
+        model, X_test, y_true, display_labels=target_names, cmap=plt.cm.Blues
+    )
+    plt.title(f"{model_name} confusion matrix")
+    plt.show()
+    
+best_classifiers_df = df.iloc[:2]
+for idx in np.array(best_classifiers_df.index):
+    name = names[idx]
+    clf = classifiers[idx]
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
+    evaluate(clf, X_test, y_test, y_pred, test_classes_, name)\end{lstlisting}
+
+
+
 
 % -------------------------------------------------
 % -------------------------------------------------
 % -------------------------------------------------
 \selectlanguage{spanish}
 \begin{thebibliography}{}
-
-\bibitem{sandipan} Sandipan D. EigenFaces and A Simple Face Detector with PCA/SVD in Python. sandipanweb, 2021. [Online]. Disponible: \url{https://sandipanweb.wordpress.com/2018/01/06/eigenfaces-and-a-simple-face-detector-with-pca-svd-in-python/}. [Visitado: 06- Aug- 2021]
-
-\bibitem{strang} G. Strang, Introduction to Linear Algebra, Fifth edition. Wellesley: Wellesley-Cambridge Press, 2016. 
-
-\bibitem{szummer} M. Szummer, "Face recognition project", Courses.media.mit.edu, 2002. [Online]. Disponible: https://courses.media.mit.edu/2004fall/mas622j/04.projects/faces/. [Accessed: 08- Aug- 2021]
+\bibitem{}
 
 \end{thebibliography}
 
