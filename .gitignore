@@ -1,2 +1,6 @@
 .DS_Store
 .vscode
+/report/main.aux
+/report/main.log
+/report/main.out
+/report/main.synctex.gz
