@@ -99,9 +99,6 @@ A partir de la secuencia de imágenes se realizó el procesamiento pertinente so
 
 Así, se espera que este tipo de acercamientos para resolver la serie de problemas que se suscitan con la presencia del sargazo en las playas y mares del territorio mexicano, puedan ser atacados mediante el uso de imágenes obtenidas en puntos estratégicos distribuidos a lo largo de la zona costera afectada. Además, esta técnica ayudaría a tener información en tiempo real y dar respuesta lo antes posible---siendo fundamental la celeridad puesto que el sargazo entra en estado de descomposición y emite un olor muy desagradable para las personas ubicadas sobre la playa.
 
-
-
-
 % -------------------------------------------------
 % -------------------------------------------------
 % -------------------------------------------------
@@ -113,7 +110,7 @@ Para resolver los objetivos planteados en este proyecto diseñamos una arquitect
     \item División de imágenes en imágenes de entrenamiento y prueba
     \item Clasificación de imágenes
     \item Extracción de características relevantes
-    \item Entrenamiento y evaluación de modelos 
+    \item Entrenamiento y evaluación de modelos.
 \end{enumerate}
 
 \subsection{Muestreo de imágenes}
@@ -151,9 +148,9 @@ A continuación se muestran dos de estas imágenes:
 \subsection{División de imágenes en imágenes de entrenamiento y prueba}
 Para esta sección, lo que hicimos fue lo siguiente:
 \begin{enumerate}
-    \item Rescalamiento de las imágenes originales de $1280\times 960$ a imágenes de $900\times900$
+    \item Re-escalamiento de las imágenes originales de $1280\times 960$ a imágenes de $900\times900$
     \item División en ventanas de $100\times 100$
-    \item División en imágenes de entrenamiento y prueba
+    \item División en imágenes de entrenamiento y prueba.
 \end{enumerate}
 
 En la figura \ref{fig:reduced_images} se muestran varias imágenes de $100\times 100$ para las clases sargazo, cielo, agua, costa y sargazo muerto respectivamente. 
@@ -180,7 +177,7 @@ Una vez que contamos con el conjunto de entrenamiento y prueba, realizamos una c
     \item Costa
 \end{enumerate}
 
-Después de realizar esta clasificación, nos quedó la siguiente división:
+Después de realizar esta clasificación, nos quedó la siguiente división de las imágenes del conjunto de imágenes:
 
 \begin{table}[H]
     \centering
@@ -194,11 +191,9 @@ Después de realizar esta clasificación, nos quedó la siguiente división:
          Costa & 309 & 116 \\ \hline
          \textbf{Total} & \textbf{800} & \textbf{300} \\ \hline                          
     \end{tabular}
-    \caption{Cantidad de imágenes de entrenamiento y prueba divididas en las $5$ clases}
+    \caption{Cantidad de imágenes de entrenamiento y prueba divididas en las $5$ clases que se buscan clasificar.}
     \label{tab:svd_dimensions}
 \end{table}
-
-
 
 \subsection{Extracción de características relevantes}
 
@@ -216,10 +211,12 @@ Para la extracción de características, lo que hicimos fue hacer un análisis d
 
 \subsection{Entrenamiento y evaluación de modelos }
 
+Debido a la naturaleza de las texturas y secciones de imagen a clasificar, desde un inicio---sin siquiera haber revisado la calificación de los modelos propuestos---se consideró como muy probable que modelos como $k$-medias no lograran clasificar adecuadamente las secciones con presencia de sargazo. Por lo tanto, se buscó probar con distintos modelos, cuya naturaleza fuera distinta.
+
 Para el entrenamiento y evaluación de modelos, probamos con los siguientes clasificadores:
 
 \begin{itemize}
-	\item $k$-vecinos
+	\item $K$-vecinos
     \item Máquina de Soporte Vectorial con kernel \textit{rbf}
     \item Clasificador Gausiano de Proceso
     \item Árboles de decisión
@@ -282,14 +279,48 @@ Podemos observar que \textit{Random Forest} a pesar de obtener una precisión de
 % -------------------------------------------------
 \section{Resultados}
 
+Ya con el mejor modelo seleccionado, es posible utilizar la predicción para detectar la presencia de sargazo en imágenes que no se encontraran dentro del conjunto de imágenes de prueba y entrenamiento. Para ello, elegimos la imagen identificada por \verb|1623442800.Fri.Jun.11_20_20_00.GMT.2021|.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.13]{imgs/eval.png}
+    \caption{Se muestra la imagen utilizada para evaluar cualitativamente el modelo.}
+\end{figure}
+
+Después, se procesa la imagen: se reajusta su tamaño, se generan los segmentos de imagen según el tamaño de ventana originalmente utilizado, se obtienen las características de las texturas mediante los métodos de Haralick y se clasifica con el modelo ya entrenado. Con lo anterior, obtenemos las clases predichas por el modelo y podemos generar una máscara por segmento de la clase a la que pertenece. Ya si se deseara realizar un seguimiento preciso de la masa de sargazo, podríamos reducir el tamaño de ventana a un mínimo y desplegar los resultados.
+
+Para generar la máscara, se eligió una paleta de colores que nos permitiera observar a través de la translucidez del color las clases predichas. Los colores han quedado como:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.3]{imgs/color_classes.png}
+    \caption{Colores utilizados para la clasificación de los segmentos.}
+\end{figure}
+
+De esta manera, solo basta iterar ventana a ventana y desplegar los segmentos de la imagen bajo análisis con un filtro de color aplicado según la clase de la que se trate. Esto nos permite ver las ventanas que conforman la imagen con el color correspondiente a su clase.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.3]{imgs/masked.png}
+    \caption{Visualización de la clasificación del modelo elegido de los segmentos mediante un filtro de color.}
+\end{figure}
+
+Se puede observar que las secciones más homogéneas, el cielo y la playa, de la imagen están correctamente clasificadas. Ya en el océano, es donde comienza la dificultad de identificar las texturas. Incluso, se observa que se clasifica parte de la arena que está desplazándose sobre la playa como sargazo. Sin embargo, se considera que los resultados son adecuados, considerando el dataset que se utilizó para el entrenamiento, junto con las técnicas de visualización y clasificación utilizadas.
 
 % -------------------------------------------------
 % -------------------------------------------------
 % -------------------------------------------------
 \section{Conclusiones}
 
-Al revisar los resultados 
+La clasificación del sargazo se ha vuelto una tarea importante para reducir el impacto que este tiene sobre las actividades turísticas en el caribe mexicano. A pesar de que se han realizado diversos intentos por estudiar y dar seguimiento al avance de las masas de sargazo que llegan a la costa---generalmente mediante la utilización de imágenes satelitales---no siempre han dotado de la información requerida para tomar decisiones y ejecutar acciones que ayuden a resolver la problemática.
 
+Muchos otros proyectos, mediante proyectos de obtención de imágenes mediante esfuerzos colectivos han buscado realizar análisis de la masa de arribo a las costas y ejecutar acciones en tiempo real para realizar labores de limpieza. Sin embargo, la complejidad radica en que las imágenes no necesariamente provienen del mismo equipo fotográfico y se encuentran en distintos ángulos y condiciones. Por lo tanto, surge el mismo problema que con la utilización de imágenes satelitales---se generalizan las soluciones sin poder abordar los problemas a nivel local.
+
+En este proyecto, se ha propuesto una serie de técnicas de manejo y procesamiento de imágenes para poder detectar el arribo de sargazo a una playa en Puerto Morelos, QR, buscando proponer una solución que pueda utilizarse en otras ubicaciones costeras afectadas por el fenómeno ya descrito.
+
+Al revisar los resultados, podemos observar que no todos los modelos de clasificación comúnmente utilizados son adecuados para detectar la presencia de sargazo en el conjunto de imágenes bajo análisis. También, la evidencia con la que contamos, nos ha llevado a pensar que puede que sea necesario utilizar análisis de texturas, clasificación y segmentación junto con modelos de aprendizaje de máquina. Esto, permitiría detectar con mayor precisión y en segmentos de imagen no cuadrados, la ubicación del sargazo por unidad de tiempo.
+
+Así, las técnicas y métodos propuestos pueden ser un muy buen punto de partida para desarrollar modelos más robustos---los cuales sean escalables y adaptables en distintas ubicaciones. Ya a partir de ellos, se podría realizar un análisis más profundo de la cantidad de masa que llega, su frecuencia y el impacto que la presencia de sargazo tiene sobre la actividad económica del lugar y el impacto ambiental que éste pueda tener sobre el ecosistema local.
 
 % -------------------------------------------------
 % -------------------------------------------------
@@ -411,14 +442,15 @@ for idx in np.array(best_classifiers_df.index):
     evaluate(clf, X_test, y_test, y_pred, test_classes_, name)\end{lstlisting}
 
 
-
-
 % -------------------------------------------------
 % -------------------------------------------------
 % -------------------------------------------------
 \selectlanguage{spanish}
 \begin{thebibliography}{}
-\bibitem{}
+
+\bibitem{sanchez} Sánchez-Carrillo, S., et.al. ERISNet: deep neural network for Sargassum detection along the coastline of the Mexican Caribbean [Online]. Disponible: \url{https://peerj.com/articles/6842/}. [Visitado: 19- Aug- 2021]
+
+\bibitem{arellano} Arellano-Verdejo, J., et.al. Collective view: mapping Sargassum distribution along beaches [Online]. Disponible: \url{https://peerj.com/articles/cs-528.pdf}. [Visitado: 19- Aug- 2021]
 
 \end{thebibliography}
 
